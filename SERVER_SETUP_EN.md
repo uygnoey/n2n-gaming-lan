@@ -1,13 +1,11 @@
-# 슈퍼노드 서버 설정
+# Supernode Server Setup
 
-🌐 [English](SERVER_SETUP_EN.md)
-
-슈퍼노드는 클라이언트들이 서로를 찾을 수 있도록 중개하는 서버입니다.
-Linux 환경에서 설정하며, 클라이언트 설치 전에 먼저 구축되어 있어야 합니다.
+The supernode is a broker server that helps clients discover each other.
+It runs on Linux and must be set up before installing clients.
 
 ---
 
-## 방법 1: Docker (권장)
+## Method 1: Docker (Recommended)
 
 ```bash
 docker run -d \
@@ -18,30 +16,30 @@ docker run -d \
   supernode -p 7654 -f
 ```
 
-컨테이너 상태 확인:
+Check container status:
 ```bash
 docker logs n2n-supernode
 ```
 
 ---
 
-## 방법 2: 직접 설치
+## Method 2: Build from Source
 
 ### Ubuntu / Debian
 
 ```bash
-# n2n 빌드 의존성 설치
+# Install build dependencies
 sudo apt update
 sudo apt install -y build-essential cmake libssl-dev
 
-# n2n 소스 빌드
+# Build n2n from source
 git clone https://github.com/ntop/n2n.git
 cd n2n
 cmake -B build
 cmake --build build
 sudo cmake --install build
 
-# supernode 실행
+# Run supernode
 sudo supernode -p 7654 -f
 ```
 
@@ -62,9 +60,9 @@ sudo supernode -p 7654 -f
 
 ---
 
-## systemd 서비스 등록
+## Register as systemd Service
 
-슈퍼노드를 시스템 서비스로 등록하면 서버 재시작 시 자동 실행됩니다.
+Register the supernode as a system service for auto-start on boot.
 
 ```bash
 sudo tee /etc/systemd/system/n2n-supernode.service << 'EOF'
@@ -87,7 +85,7 @@ sudo systemctl enable --now n2n-supernode
 
 ---
 
-## 방화벽 포트 개방
+## Open Firewall Port
 
 ```bash
 # UFW (Ubuntu)
