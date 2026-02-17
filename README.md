@@ -69,12 +69,59 @@ EncryptKey=YourSecretKey123
 
 > 모든 클라이언트는 **같은 Community, EncryptKey** 값을 사용해야 합니다.
 
-**2. 설치 스크립트 실행**
+**2. PowerShell 실행 정책 설정**
+
+Windows는 기본적으로 `.ps1` 스크립트 실행을 차단합니다.
+아래 두 가지 방법 중 하나를 선택하세요.
+
+<details>
+<summary><b>방법 1: 영구 설정 (권장 - 한 번만 하면 끝!)</b></summary>
+
+이 설정을 하면 앞으로 PC에서 모든 PowerShell 스크립트를 자유롭게 실행할 수 있습니다.
+
+1. 키보드에서 **Windows 키**를 누르고 `PowerShell` 을 입력합니다.
+2. 검색 결과에서 **Windows PowerShell** 을 찾아 **우클릭** → **관리자 권한으로 실행** 을 선택합니다.
+3. "이 앱이 디바이스를 변경할 수 있도록 허용하시겠어요?" 팝업이 나오면 **예** 를 클릭합니다.
+4. 파란색 PowerShell 창이 열리면 아래 명령어를 **복사 & 붙여넣기** 후 Enter를 누릅니다:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+5. 아래와 같은 확인 메시지가 나옵니다:
+```
+실행 규칙 변경
+실행 정책은 신뢰하지 않는 스크립트로부터 사용자를 보호합니다. ...
+[Y] 예(Y)  [A] 모두 예(A)  [N] 아니요(N)  [L] 모두 아니요(L)  [S] 일시 중단(S)  [?] 도움말 (기본값은 "N"):
+```
+
+`Y` 를 입력하고 Enter를 누릅니다.
+
+6. 에러 메시지 없이 다음 줄로 넘어가면 성공입니다! PowerShell 창을 닫아도 됩니다.
+
+> 이후부터는 `.ps1` 스크립트를 자유롭게 실행할 수 있습니다. **이 설정은 한 번만 하면 됩니다.**
+
+</details>
+
+<details>
+<summary><b>방법 2: 일회성 실행 (PC 설정 변경 없이)</b></summary>
+
+PC 설정을 바꾸고 싶지 않다면, 실행할 때마다 아래 명령어를 사용하세요:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_edge.ps1
+```
+
+> PC 설정이 변경되지 않는 대신, 매번 이 긴 명령어를 입력해야 합니다.
+
+</details>
+
+**3. 설치 스크립트 실행**
 
 PowerShell을 **관리자 권한**으로 열고 실행합니다.
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; .\install_edge.ps1
+.\install_edge.ps1
 ```
 
 설치 중 **회원 고유번호**를 입력하면 VPN IP가 자동 할당됩니다.

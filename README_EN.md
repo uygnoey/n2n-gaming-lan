@@ -69,12 +69,59 @@ EncryptKey=YourSecretKey123
 
 > All clients must use the **same Community and EncryptKey** values.
 
-**2. Run the Install Script**
+**2. PowerShell Execution Policy Setup**
+
+Windows blocks `.ps1` script execution by default.
+Choose one of the two methods below.
+
+<details>
+<summary><b>Method 1: Permanent Setup (Recommended - do it once and forget!)</b></summary>
+
+After this setup, you can freely run any PowerShell script on your PC.
+
+1. Press the **Windows key** on your keyboard and type `PowerShell`.
+2. In the search results, find **Windows PowerShell**, **right-click** it, and select **Run as administrator**.
+3. A popup will ask "Do you want to allow this app to make changes to your device?" — click **Yes**.
+4. A blue PowerShell window will open. **Copy and paste** the command below exactly as-is, then press Enter:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+5. You will see a confirmation prompt like this:
+```
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust. ...
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
+```
+
+Type `Y` and press Enter.
+
+6. If the cursor moves to the next line with no error message, it worked! You can close the PowerShell window.
+
+> From now on, you can run `.ps1` scripts freely. **This setup only needs to be done once.**
+
+</details>
+
+<details>
+<summary><b>Method 2: One-time Execution (No PC setting changes)</b></summary>
+
+If you don't want to change PC settings, use this command each time:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_edge.ps1
+```
+
+> No PC settings are changed, but you need to type this long command every time.
+
+</details>
+
+**3. Run the Install Script**
 
 Open PowerShell as **Administrator** and run:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; .\install_edge.ps1
+.\install_edge.ps1
 ```
 
 Enter your **member ID** during installation to get an auto-assigned VPN IP.
