@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 #=============================================================================
 # n2n Edge 자동 설치 스크립트 - GameLink - P2P Gaming LAN
 # 관리자 권한 PowerShell에서 실행:
