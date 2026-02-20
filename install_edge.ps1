@@ -1,4 +1,4 @@
-﻿#Requires -RunAsAdministrator
+#Requires -RunAsAdministrator
 #=============================================================================
 # n2n Edge 자동 설치 스크립트 - GameLink - P2P Gaming LAN
 # 관리자 권한 PowerShell에서 실행:
@@ -9,42 +9,9 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 $N2N_DIR = "C:\n2n"
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-
-# --- env.ini 에서 설정 읽기 ---
-$envIni = Join-Path $scriptDir "env.ini"
-if (-not (Test-Path $envIni)) {
-    Write-Host ""
-    Write-Host "  [!] env.ini 파일을 찾을 수 없습니다!" -ForegroundColor Red
-    Write-Host "  env.ini.example 을 복사하여 env.ini 를 만들고 실제 값을 입력하세요." -ForegroundColor Yellow
-    Write-Host ""
-    Read-Host "  Enter를 눌러 종료"
-    exit 1
-}
-
-$envContent = Get-Content $envIni -Encoding UTF8
-$envConfig = @{}
-foreach ($line in $envContent) {
-    $trimmed = $line.Trim()
-    if ($trimmed -eq "" -or $trimmed.StartsWith(";") -or $trimmed.StartsWith("#") -or $trimmed.StartsWith("[")) { continue }
-    $eqIdx = $trimmed.IndexOf("=")
-    if ($eqIdx -gt 0) {
-        $envConfig[$trimmed.Substring(0, $eqIdx).Trim()] = $trimmed.Substring($eqIdx + 1).Trim()
-    }
-}
-
-$SUPERNODE   = $envConfig["SuperNode"]
-$COMMUNITY   = $envConfig["Community"]
-$ENCRYPT_KEY = $envConfig["EncryptKey"]
-
-if (-not $SUPERNODE -or -not $COMMUNITY -or -not $ENCRYPT_KEY) {
-    Write-Host ""
-    Write-Host "  [!] env.ini 에 필수 설정이 누락되었습니다!" -ForegroundColor Red
-    Write-Host "  SuperNode, Community, EncryptKey 를 모두 입력하세요." -ForegroundColor Yellow
-    Write-Host ""
-    Read-Host "  Enter를 눌러 종료"
-    exit 1
-}
+$SUPERNODE = "sim.vpn.m-club.or.kr:7654"
+$COMMUNITY = "MCK_LAN"
+$ENCRYPT_KEY = "MCK2026!@#"
 
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -68,6 +35,7 @@ Write-Host "[2/5] n2n v3 Windows 바이너리 설치..." -ForegroundColor Yellow
 
 $edgeExe = "$N2N_DIR\edge.exe"
 $downloaded = $false
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # --- 방법 1: 스크립트 폴더에 edge.exe가 있으면 바로 복사 ---
 $localEdge = Join-Path $scriptDir "edge.exe"
@@ -200,12 +168,35 @@ if (-not $tapAdapter) {
 #-----------------------------------------------------------------------------
 Write-Host "[4/5] Windows 방화벽 규칙 설정..." -ForegroundColor Yellow
 try {
+    # 기존 규칙 정리
     Remove-NetFirewallRule -DisplayName "n2n Edge VPN*" -ErrorAction SilentlyContinue
+    Remove-NetFirewallRule -DisplayName "GameLink VPN*" -ErrorAction SilentlyContinue
+
+    # edge.exe UDP 허용
     New-NetFirewallRule -DisplayName "n2n Edge VPN" -Direction Inbound -Protocol UDP -Action Allow -Description "GameLink - P2P Gaming LAN" | Out-Null
     New-NetFirewallRule -DisplayName "n2n Edge VPN (Out)" -Direction Outbound -Protocol UDP -Action Allow -Description "GameLink - P2P Gaming LAN" | Out-Null
-    Write-Host "  → 방화벽 규칙 추가됨" -ForegroundColor Green
+
+    # VPN 서브넷 전체 허용 (10.0.0.0/16)
+    New-NetFirewallRule -DisplayName "GameLink VPN In" -Direction Inbound -RemoteAddress 10.0.0.0/16 -Action Allow -Description "GameLink VPN subnet" | Out-Null
+    New-NetFirewallRule -DisplayName "GameLink VPN Out" -Direction Outbound -RemoteAddress 10.0.0.0/16 -Action Allow -Description "GameLink VPN subnet" | Out-Null
+
+    Write-Host "  → 방화벽 규칙 추가됨 (edge UDP + VPN 서브넷)" -ForegroundColor Green
 } catch {
     Write-Host "  [!] 방화벽 규칙 추가 실패" -ForegroundColor Yellow
+}
+
+# TAP 어댑터를 Private 네트워크로 변경 (LAN 검색 + ping 허용)
+try {
+    $tapProfile = Get-NetConnectionProfile -InterfaceAlias "로컬 영역 연결" -ErrorAction SilentlyContinue
+    if ($tapProfile -and $tapProfile.NetworkCategory -ne "Private") {
+        Set-NetConnectionProfile -InterfaceAlias "로컬 영역 연결" -NetworkCategory Private
+        Write-Host "  → TAP 어댑터 네트워크 → Private 변경됨" -ForegroundColor Green
+    } elseif ($tapProfile) {
+        Write-Host "  → TAP 어댑터 이미 Private" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  [!] TAP 네트워크 프로필 변경은 VPN 연결 후 수동 설정 필요" -ForegroundColor Yellow
+    Write-Host "      Set-NetConnectionProfile -InterfaceAlias '로컬 영역 연결' -NetworkCategory Private" -ForegroundColor Gray
 }
 
 #-----------------------------------------------------------------------------
@@ -317,8 +308,8 @@ class GameLinkTray : Form {
         }
 
         var cfg = ReadIni(iniPath);
-        supernode = Ini(cfg, "SuperNode", "");
-        community = Ini(cfg, "Community", "");
+        supernode = Ini(cfg, "SuperNode", "sim.vpn.m-club.or.kr:7654");
+        community = Ini(cfg, "Community", "MCK_LAN");
         key       = Ini(cfg, "Key", "");
         int.TryParse(Ini(cfg, "MemberID", "0"), out memberId);
 
@@ -414,6 +405,16 @@ class GameLinkTray : Form {
         if (msg.Contains("[OK] edge") && msg.Contains("supernode")) {
             SetTrayStatus("연결됨 " + myIp, Color.LimeGreen);
             trayIcon.ShowBalloonTip(3000, "GameLink", "VPN 연결 성공!\nIP: " + myIp, ToolTipIcon.Info);
+            // TAP 어댑터를 Private 네트워크로 변경 (ping/LAN 허용)
+            try {
+                var ps = new ProcessStartInfo {
+                    FileName = "powershell",
+                    Arguments = "-NoProfile -Command \"Set-NetConnectionProfile -InterfaceAlias '로컬 영역 연결' -NetworkCategory Private\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                Process.Start(ps);
+            } catch {}
         }
         // supernode 응답 없음 감지
         if (msg.Contains("WARNING: supernode not responding")) {
